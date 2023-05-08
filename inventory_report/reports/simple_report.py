@@ -1,7 +1,8 @@
 from datetime import datetime
+from inventory_report.reports.report import Report
 
 
-class SimpleReport:
+class SimpleReport(Report):
     inventory = []
 
     @classmethod
