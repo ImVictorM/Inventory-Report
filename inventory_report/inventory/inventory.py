@@ -1,52 +1,29 @@
-import csv
-import json
-import xml.etree.ElementTree as ET
 from inventory_report.reports.simple_report import SimpleReport
 from inventory_report.reports.complete_report import CompleteReport
+from inventory_report.importer.csv_importer import CsvImporter
+from inventory_report.importer.json_importer import JsonImporter
+from inventory_report.importer.xml_importer import XmlImporter
+from inventory_report.importer.importer import Importer
 
 
 class Inventory:
-    @classmethod
-    def csv_to_list(cls, file):
-        reader = csv.DictReader(file)
-        inventory = [row for row in reader]
-        return inventory
+    FILE_TYPE_IMPORTER_MAP = {
+        ".csv": CsvImporter,
+        ".json": JsonImporter,
+        ".xml": XmlImporter,
+    }
 
-    @classmethod
-    def json_to_list(cls, file):
-        inventory = json.load(file)
-        return inventory
-
-    @classmethod
-    def xml_to_list(cls, file_path):
-        tree = ET.parse(file_path)
-        dataset = tree.getroot()
-        xml_to_list = []
-
-        for record in dataset:
-            item = {}
-            for child in record:
-                item[child.tag] = child.text
-
-            xml_to_list.append(item)
-
-        return xml_to_list
+    REPORT_TYPE_MAP = {
+        "simples": SimpleReport,
+        "completo": CompleteReport,
+    }
 
     @classmethod
     def import_data(cls, file_path, report_type):
-        with open(file_path) as file:
-            inventory = []
+        file_extension = file_path[file_path.rfind("."):]
+        importer: Importer = cls.FILE_TYPE_IMPORTER_MAP.get(file_extension)
 
-            if file_path.endswith(".csv"):
-                inventory = Inventory.csv_to_list(file)
-            elif file_path.endswith(".json"):
-                inventory = Inventory.json_to_list(file)
-            else:
-                # xml case
-                inventory = Inventory.xml_to_list(file_path)
+        inventory = importer.import_data(file_path)
+        report = cls.REPORT_TYPE_MAP.get(report_type)
 
-            if report_type == "simples":
-                return SimpleReport.generate(inventory)
-            else:
-                # complete case
-                return CompleteReport.generate(inventory)
+        return report.generate(inventory)
